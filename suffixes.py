@@ -25,6 +25,10 @@ def ISN(s):
 
     # Define magnitude multipliers
     multipliers = {
+<<<<<<< HEAD
+=======
+        '%': 0.01,
+>>>>>>> flfix
         'K': 1000,
         'M': 1000000,
         'B': 1000000000,

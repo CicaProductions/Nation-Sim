@@ -1,4 +1,4 @@
-import math, random
+import {math,random}
 from suffixes import SN
 
 
@@ -9,7 +9,7 @@ def doOreGain(ore, nerf, tier, ML, oregain, has):
         if ML >= tier * 15:
             ore += oregain / (nerf * 10)
     else:
-        if ML >= (tier-1) * 10:
+        if ML >= (tier - 1) * 10:
             ore += oregain / nerf
 
     return math.floor(ore)
@@ -92,8 +92,11 @@ def calculate(mode, resource, tin, ml):
 
 
 furnace_level_requirements = [
-    [10000, 1000, 500, 500, 0],
-    [35000, 5000, 3000, 2000, 1000]
+    [10000, 1000, 500, 500, 0, 0, 0, 0],
+    [35000, 5000, 3000, 2000, 1000, 0, 0, 0],
+    [100000, 25000, 10000, 10000, 5000, 0, 0, 0],
+    [750000, 750000, 500000, 250000, 25000, 0, 0, 0],
+    [2500000, 2000000, 2000000, 2000000, 50000, 100000, 100000, 25000],
 ]
 furnace_level_definitions = [
     "Iron",
@@ -101,44 +104,80 @@ furnace_level_definitions = [
     "Coal",
     "Salt",
     "Steel",
+    "Cobalt",
+    "Tungsten",
+    "Oil",
 ]
 
 
-def handleFL(FL, curIron, curBronze, curCoal, curSalt, curSteel):
-    flr=furnace_level_requirements[FL]
+def handleFL(
+    FL, curIron, curBronze, curCoal, curSalt, curSteel, curCobalt, curTungsten, curOil, craftableBronze, craftableSteel
+):
+    ret=False
+    flr = furnace_level_requirements[FL]
     reqiron = flr[0]
     reqbronze = flr[1]
     reqcoal = flr[2]
     reqsalt = flr[3]
     reqsteel = flr[4]
+    reqcobalt = flr[5]
+    reqtungsten = flr[6]
+    reqoil = flr[7]
 
     if (
-        curIron >= reqiron and 
-        curBronze >= reqbronze and 
-        curCoal >= reqcoal and 
-        curSalt >= reqsalt and 
-        curSteel >= reqsteel
+        curIron >= reqiron
+        and curBronze+craftableBronze >= reqbronze
+        and curCoal >= reqcoal
+        and curSalt >= reqsalt
+        and curSteel+craftableSteel >= reqsteel
+        and curCobalt >= reqcobalt
+        and curTungsten >= reqtungsten
+        and curOil >= reqoil
     ):
-        FL += 1
-        curIron -= reqiron
-        curBronze -= reqbronze
-        curCoal -= reqcoal
-        curSalt -= reqsalt
+        ret=True
         curSteel -= reqsteel
-    return [FL, curIron, curBronze, curCoal, curSalt, curSteel]
+        craftSteelSubtract=max(0-curSteel, 0)
+        if curIron-craftSteelSubtract*10>=reqiron and curCoal-craftSteelSubtract>=reqCoal:
+            FL += 1
+            curIron -= reqiron
+            curBronze -= reqbronze
+            craftBronzeSubtract=max(0-curBronze, 0)
+            curCoal -= reqcoal
+            curSalt -= reqsalt
+            curCobalt -= reqcobalt
+            curTungsten -= reqtungsten
+            curOil -= reqoil
+        else:
+            ret=False
+
+    return ret,[
+        FL,
+        curIron,
+        max(curBronze,0),
+        curCoal,
+        curSalt,
+        max(curSteel,0),
+        curCobalt,
+        curTungsten,
+        curOil,
+    ], [
+        craftBronzeSubtract,
+        craftSteelSubtract,
+    ]
 
 
 def returnFLRequirements(FL):
-    flr=furnace_level_requirements[FL]
+    flr = furnace_level_requirements[FL]
     ret = "("
-    i=0
+    i = 0
     for ore in flr:
-        if ore!=0:
+        if ore != 0:
             ret += f"{furnace_level_definitions[i]}: {SN(ore)}, "
-        i+=1
+        i += 1
     ret.rstrip(", ")
-    ret+=")"
+    ret += ")"
     return ret
+
 
 def stochasticRound(x):
     floor_val = math.floor(x)
@@ -147,5 +186,6 @@ def stochasticRound(x):
         return floor_val + 1
     return floor_val
 
-def cWF(n,k):
-    return round(n*k)
+
+def cWF(n, k):
+    return round(n * k)
