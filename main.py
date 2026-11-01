@@ -52,15 +52,15 @@ for nationBlock in info2:
 def crafting_tab(steel, gears, steamengine, bora, tractor, furnacelevel, research):
     ret = ""
     if furnacelevel >= 1:
-        ret += f"{chr(10)}    Steel: {steelCrafting} (needs 10 iron and 1 coal for 1)"
+        ret += f"{chr(10)}    Steel: {steel} (needs 10 iron and 1 coal for 1)"
     if furnacelevel >= 2:
-        ret += f"{chr(10)}    Indus:{chr(10)}        Gear: {gearCrafting} (1 bronze for 10)"
+        ret += f"{chr(10)}    Indus:{chr(10)}        Gear: {gears} (1 bronze for 10)"
     if furnacelevel >= 3:
-        ret += f"{chr(10)}        Steam Engine: {steamEngine} (1 Steel for 1)"
+        ret += f"{chr(10)}        Steam Engine: {steamengine} (1 Steel for 1)"
     if research[20] >= 1:
-        ret += f"{chr(10)}        BORA: {bora} (Needs 10K Steam Engines, 10K Gears, and 100K Coal for 1)"
+        ret += f"{chr(10)}        BORA: {bora} (Needs 100K Iron, 200K Coal, 1K sulpher, and 500 Oil for one)"
     if research[21] >= 1:
-        ret += f"{chr(10)}        Tractors: {tractors} (Needs 10K Steam Engines, 10K Gears, and 100K Coal for 1)"
+        ret += f"{chr(10)}        Tractors: {tractor} (Needs 10K Steam Engines, 10K Gears, and 100K Coal for 1)"
     return ret
 
 
@@ -110,7 +110,7 @@ for nation in range(len(info2)):
             boost_context = "farming"
         elif "ore boosts:" in line_lower:
             boost_context = "ore"
-        elif "research boosts:" in line_lower:
+        elif "research stats:" in line_lower:
             boost_context = "research"
         elif "influence boosts:" in line_lower:
             boost_context = "govt"
@@ -218,7 +218,6 @@ for nation in range(len(info2)):
             silicon = ISN(line_clean.split("Silicon: ")[1].split(",")[0])
             beryllium = ISN(line_clean.split("Beryllium: ")[1].split(",")[0])
             hydrogen = ISN(line_clean.split("Hydrogen: ")[1].split(",")[0])
-            plutonium = ISN(line_clean.split("Plutonium: ")[1].split(",")[0])
             radium = ISN(line_clean.split("Radium: ")[1].split(",")[0])
             mythril = ISN(line_clean.split("Mythril: ")[1].strip())
         elif "has:" in line_lower:
@@ -250,7 +249,9 @@ for nation in range(len(info2)):
             elif boost_context == "govt":
                 focusGovtBoost = ISN(line_clean.split("(+")[1].split("%")[0])
         elif "furnace level:" in line_lower:
-            if boost_context == "ore":
+            if boost_context == "farming":
+                furnaceFarmingBoost = ISN(line_clean.split("(+")[1].split("%")[0])
+            elif boost_context == "ore":
                 furnaceLeveOrelBoost = ISN(line_clean.split("x")[1].split(")")[0])
             elif boost_context == "research":
                 furnaceResearchBoost = ISN(line_clean.split("x")[1].split(")")[0])
@@ -264,6 +265,8 @@ for nation in range(len(info2)):
             MiningLevelOreBoost = ISN(line_clean.split("x")[1].split(")")[0])
         elif "scientists:" in line_lower and boost_context == "research":
             scientistResearchBoost = ISN(line_clean.split("x")[1].split(")")[0])
+        elif "points" in line_lower and boost_context == "research":
+            researchPoints = ISN(line_clean.split(": ")[1])
 
         # --- GOVERNMENT ---
         elif "current educated government employees:" in line_lower:
@@ -341,11 +344,9 @@ for nation in range(len(info2)):
         + (10 * research[56])
     )
     researchResearchBoost = (
-        (15 * research[9])
-        + (10 * research[11])
-        + (15 * research[24])
-        + (10 * research[35])
-        + (35 * research[55])
+        (15 * research[14])
+        + (50 * research[31])
+        + (50 * research[56])
     )
 
     # citHap and citAng
@@ -365,7 +366,15 @@ for nation in range(len(info2)):
     )
     if neededInfluence != 0:
         influenceGradient = influenceGain / neededInfluence
-        if influenceGradient > 8:
+        if influenceGradient > 64:
+            govtNerf = 1.7
+        elif influenceGradient > 48:
+            govtNerf = 1.6
+        elif influenceGradient > 32:
+            govtNerf = 1.5
+        elif influenceGradient > 16:
+            govtNerf = 1.3
+        elif influenceGradient > 8:
             govtNerf = 1.2
         elif influenceGradient > 4:
             govtNerf = 1.1
@@ -396,6 +405,7 @@ for nation in range(len(info2)):
     if neededFood > foodGain:
         foodEconomy = foodGain
         if foodGain + food < neededFood:
+            print(name +" Couldn't feed their people")
             foodDebt = neededFood - (food + foodGain)
             food = 0
             children_to_starve = min(math.ceil(foodDebt / 2), childCount)
@@ -422,10 +432,10 @@ for nation in range(len(info2)):
                 foodDebt -= military_to_starve
                 citHap -= 5
         else:
-            food = (food - neededFood + foodGain) * foodRetention / 100
+            food = (min((food - neededFood) * foodRetention / 100,(food - neededFood)))+ foodGain
     else:
         foodEconomy = neededFood
-        food = (food - neededFood + foodGain) * foodRetention / 100
+        food = (min((food - neededFood) * foodRetention / 100,(food - neededFood)))+ foodGain
     foodExcess = foodGain - neededFood
 
     # drought stuff
@@ -444,6 +454,7 @@ for nation in range(len(info2)):
         droughtPower += 1
 
     # economy stuff
+    oldGold = gold
     if gold <= 0:
             citHap -= 3
     gold += govtNerf * gpc * (tax / 100) * foodEconomy * round(1.1**furnaceLevel + 0.1*furnaceLevel,2)
@@ -458,7 +469,15 @@ for nation in range(len(info2)):
     gold = round(gold, 2)
     if gold <= 0:
         citHap -= 3
-
+    else:
+        goldGain = gold-oldGold
+        gpcGainExp = (math.floor(goldGain/50)/100)/gpc
+        if 0.2 > gpcGainExp > 0.1:
+            gold = (oldGold)+((gpc*500)+((goldGain-(gpc*500))/4))
+            gold = round(gold, 2)
+        elif gpcGainExp >= 0.2:
+            gold = (oldGold)+((gpc*(1000-(1000*2**-(gpcGainExp*10-1))))+((goldGain-(gpc*(1000-(1000*2**-(gpcGainExp*10-1)))))/(2**(gpcGainExp*10))))
+            gold = round(gold, 2)
     # population
     temp = childCount
     childCount = math.floor(childCount * 0.8)
@@ -490,13 +509,14 @@ for nation in range(len(info2)):
 
     # Mining stuff
     MiningLevelOreBoost = 1.15**miningLevel
-    furnaceLeveOrelBoost = 2.5**furnaceLevel
+    furnaceLeveOrelBoost = 2**furnaceLevel
     globalFurnaceBoost = 1.3 ** (
         (max(globalFurnaceLevel, furnaceLevel + 1)) - furnaceLevel - 1
     )
+    minerProportion = (uneducatedMiner + educatedMiner + militaryMiner)/population
     oreGain = (
         govtNerf
-        * ((uneducatedMiner + educatedMiner + militaryMiner) / 12)
+        * (minerProportion*(population**0.95) / 5)
         * MiningLevelOreBoost
         * furnaceLeveOrelBoost
         * globalFurnaceBoost
@@ -534,9 +554,6 @@ for nation in range(len(info2)):
     beryllium = doOreGain(
         beryllium, 1000, 3, miningLevel, oreGain, has.__contains__("Beryllium")
     )
-    plutonium = doOreGain(
-        plutonium, 100000, 3, miningLevel, oreGain, has.__contains__("Plutonium")
-    )
     mythril = doOreGain(
         mythril, 1000000, 3, miningLevel, oreGain, has.__contains__("Mythril")
     )
@@ -557,7 +574,7 @@ for nation in range(len(info2)):
             iron = MLstats[0]
             tin = MLstats[1]
             miningLevel = MLstats[2]
-    temp = handleFL(furnaceLevel, iron, bronzeCrafting, coal, salt, steelCrafting)
+    temp = handleFL(furnaceLevel, iron, bronzeCrafting, coal, salt, steelCrafting, cobalt, tungsten, oil)
     furnaceLevel = temp[0]
     furnaceReq = returnFLRequirements(furnaceLevel)
     iron = temp[1]
@@ -567,19 +584,13 @@ for nation in range(len(info2)):
     steel = temp[5]
     MiningLevelOreBoost = 1.15**miningLevel
     furnaceLeveOrelBoost = 2.5**furnaceLevel
-
-<<<<<<< HEAD
-
-    goldBuff = ((govtNerf * round(1.1**furnaceLevel + 0.1 * furnaceLevel, 2)) - 1) / 100
-=======
     goldBuff = ((govtNerf * round(1.1**furnaceLevel + 0.1 * furnaceLevel, 2)) - 1) * 100
->>>>>>> origin/main
 
     cWLF = 0
     cWKF = 1
-    if citHap <= 50:
+    if citHap <= 50-max(citAng-50,0):
         civilWar = True
-        cWLF = min(2 * (50 - citHap), 90) / 100
+        cWLF = min(2 * (50 - citHap-max(citAng-50,0)), 90) / 100
         cWKF = 1 - cWLF
         citHap = round(66 + citHap * 34)
 
@@ -588,18 +599,21 @@ for nation in range(len(info2)):
     finalUneducatedFarmer = cWF(uneducatedFarmer,cWKF)
     finalUneducatedMiner = cWF(uneducatedMiner,cWKF)
     finalUneducatedGovt = cWF(uneducatedGovt,cWKF)
+    finalUneducatedUnemployed = cWF((uneducatedCount-uneducatedFarmer-uneducatedMiner-uneducatedGovt),cWKF)
     finalEducatedFarmer = cWF(educatedFarmer,cWKF)
     finalEducatedMiner = cWF(educatedMiner,cWKF)
     finalEducatedGovt = cWF(educatedGovt,cWKF)
     finalEducatedScientist = cWF(educatedScientist,cWKF)
+    finalEducatedUnemployed = cWF((educatedCount-educatedFarmer-educatedMiner-educatedGovt-educatedScientist),cWKF)
     finalMilitaryFarmer = cWF(militaryFarmer,cWKF)
     finalMilitaryMiner = cWF(militaryMiner,cWKF)
     finalMilitarySoldiers = cWF(militarySoldiers,cWKF)
+    finalMilitaryUnemployed = cWF((militaryCount-militaryFarmer-militaryMiner-militarySoldiers),cWKF)
     finalChildCount = cWF(childCount,cWKF)
-    finalUneducatedCount = cWF(finalUneducatedFarmer + finalUneducatedMiner + finalUneducatedGovt,cWKF)
-    finalEducatedCount = cWF(finalEducatedFarmer + finalEducatedMiner + finalEducatedGovt + finalEducatedScientist,cWKF)
-    finalMilitaryCount = cWF(finalMilitaryFarmer + finalMilitaryMiner + finalMilitarySoldiers,cWKF)
-    finalPopulation = cWF(finalChildCount + finalUneducatedCount + finalEducatedCount + finalMilitaryCount,cWKF)
+    finalUneducatedCount = finalUneducatedFarmer + finalUneducatedMiner + finalUneducatedGovt + finalUneducatedUnemployed
+    finalEducatedCount = finalEducatedFarmer + finalEducatedMiner + finalEducatedGovt + finalEducatedScientist + finalEducatedUnemployed
+    finalMilitaryCount = finalMilitaryFarmer + finalMilitaryMiner + finalMilitarySoldiers + finalMilitaryUnemployed
+    finalPopulation = finalChildCount + finalUneducatedCount + finalEducatedCount + finalMilitaryCount
     finalFood = cWF(food,cWKF)
     finalNeededInfluence = furnaceLevel*(finalUneducatedCount+10*finalEducatedCount+3*finalMilitaryCount)
     recomendedUneducatedFarmers = min(math.ceil(((finalChildCount)+finalPopulation)/(foodperperson*0.95)),uneducatedCount)
@@ -623,11 +637,14 @@ for nation in range(len(info2)):
                 finalMilitaryMiner = finalMilitaryCount-finalMilitaryFarmer
             else:
                 finalMilitarySoldiers = finalMilitaryCount-finalMilitaryFarmer
+    furnaceResearchBoost = 2.5**furnaceLevel
+    researcherResearchMult = 1 + math.sqrt(finalEducatedScientist)
 
+    researchPoints += round(researcherResearchMult*(1+(focusResearchBoost/100))*furnaceResearchBoost*(1+(researchResearchBoost/100)))
 
     final_output = f"""{name}:
 Country focus: {focus}
-Gold: {SN(finalGold)}, Gold ore: {goldOre} (+{goldOreGain}), Buff/Nerf: +{goldBuff}%
+Gold: {SN(finalGold)}, Gold ore: {goldOre} (+{goldOreGain}), Buff/Nerf: +{round(goldBuff,2)}%
 Gold per capita: {SN(gpc)}, Tax: {tax}%
 Population Stats:
     Population: {SNS(finalPopulation)} (+{cWF(popGain,cWKF)}) (+{cWF(popGain2,cWKF)}/t2) (+{popBoost}%) (t2 cost: 50)
@@ -657,7 +674,7 @@ Food:
     Farming Boosts:
         Research: (+{researchFarmingBoost}%)
         Focus: (+{focusFarmingBoost}%)
-        Furnace Level: (+{furnaceLevel/5*100}%)
+        Furnace Level: (+{20*furnaceLevel}%)
     Drought:
         Drought Power: {droughtPower}
         Drought Nerf: {droughtNerf}%
@@ -668,7 +685,7 @@ Ore:
     -Tier 2 ores-
     Titanium: {SN(cWF(titanium,cWKF))}, Cobalt: {SN(cWF(cobalt,cWKF))}, Tungsten: {SN(cWF(tungsten,cWKF))}, Oil: {SN(cWF(oil,cWKF))}, Magnesium: {SN(cWF(magnesium,cWKF))}
     -Tier 3 ores-
-    Uranium: {SN(cWF(uranium,cWKF))}, Silicon: {SN(cWF(silicon,cWKF))}, Beryllium: {SN(cWF(beryllium,cWKF))}, Hydrogen: {SN(cWF(hydrogen,cWKF))}, Plutonium: {SN(cWF(plutonium,cWKF))}, Radium: {SN(cWF(radium,cWKF))}, Mythril: {SN(cWF(mythril,cWKF))}
+    Uranium: {SN(cWF(uranium,cWKF))}, Silicon: {SN(cWF(silicon,cWKF))}, Beryllium: {SN(cWF(beryllium,cWKF))}, Hydrogen: {SN(cWF(hydrogen,cWKF))}, Radium: {SN(cWF(radium,cWKF))}, Mythril: {SN(cWF(mythril,cWKF))}
     Has: {", ".join(has)}
     Mining Level: {miningLevel}
     Ore Boosts:
@@ -676,11 +693,13 @@ Ore:
         Focus: (+{focusOreBoost}%)
         Mining Level: (x{MiningLevelOreBoost})
         Furnace Level: (x{furnaceLeveOrelBoost})
-Research Boosts:
-    Research: (+{researchResearchBoost}%)
-    Focus: (+{focusResearchBoost}%)
-    Furnace level: (x{furnaceResearchBoost})
-    Scientists: (x{scientistResearchBoost})
+Research Stats:
+    Research Points: {researchPoints}
+    Research Boost:
+        Research: (+{researchResearchBoost}%)
+        Focus: (+{focusResearchBoost}%)
+        Furnace level: (x{furnaceResearchBoost})
+        Scientists: (x{scientistResearchBoost})
 Government:
     Needed influence: {finalNeededInfluence} ({furnaceLevel}*(1*{SN(cWF(uneducatedFarmer,cWKF)+cWF(uneducatedMiner,cWKF)+cWF(uneducatedGovt,cWKF))}+10*{SN(cWF(educatedFarmer,cWKF)+cWF(educatedMiner,cWKF)+cWF(educatedGovt,cWKF)+cWF(educatedScientist,cWKF))}+3*{SN(cWF(militaryFarmer,cWKF)+cWF(militaryMiner,cWKF)+cWF(militarySoldiers,cWKF))}))
     Current educated government employees: {finalEducatedGovt}
@@ -737,7 +756,7 @@ Food:
     Farming Boosts:
         Research: (+{researchFarmingBoost}%)
         Focus: (+{focusFarmingBoost}%)
-        Furnace Level: (+{furnaceLevel/5*100}%)
+        Furnace Level: (+{20*furnaceLevel}%)
     Drought:
         Drought Power: {droughtPower}
         Drought Nerf: {droughtNerf}%
@@ -748,7 +767,7 @@ Ore:
     -Tier 2 ores-
     Titanium: {SN(cWF(titanium,cWLF))}, Cobalt: {SN(cWF(cobalt,cWLF))}, Tungsten: {SN(cWF(tungsten,cWLF))}, Oil: {SN(cWF(oil,cWLF))}, Magnesium: {SN(cWF(magnesium,cWLF))}
     -Tier 3 ores-
-    Uranium: {SN(cWF(uranium,cWLF))}, Silicon: {SN(cWF(silicon,cWLF))}, Beryllium: {SN(cWF(beryllium,cWLF))}, Hydrogen: {SN(cWF(hydrogen,cWLF))}, Plutonium: {SN(cWF(plutonium,cWLF))}, Radium: {SN(cWF(radium,cWLF))}, Mythril: {SN(cWF(mythril,cWLF))}
+    Uranium: {SN(cWF(uranium,cWLF))}, Silicon: {SN(cWF(silicon,cWLF))}, Beryllium: {SN(cWF(beryllium,cWLF))}, Hydrogen: {SN(cWF(hydrogen,cWLF))}, Radium: {SN(cWF(radium,cWLF))}, Mythril: {SN(cWF(mythril,cWLF))}
     Has: {", ".join(has)}
     Mining Level: {miningLevel}
     Ore Boosts:
@@ -756,11 +775,13 @@ Ore:
         Focus: (+{focusOreBoost}%)
         Mining Level: (x{MiningLevelOreBoost})
         Furnace Level: (x{furnaceLeveOrelBoost})
-Research Boosts:
-    Research: (+{researchResearchBoost}%)
-    Focus: (+{focusResearchBoost}%)
-    Furnace level: (x{furnaceResearchBoost})
-    Scientists: (x{scientistResearchBoost})
+Research Stats:
+    Research Points: {researchPoints}
+    Research Boost:
+        Research: (+{researchResearchBoost}%)
+        Focus: (+{focusResearchBoost}%)
+        Furnace level: (x{furnaceResearchBoost})
+        Scientists: (x{scientistResearchBoost})
 Government:
     Needed influence: {neededInfluence} ({furnaceLevel}*(1*{SN(cWF(uneducatedFarmer,cWLF)+cWF(uneducatedMiner,cWLF)+cWF(uneducatedGovt,cWLF))}+10*{SN(cWF(educatedFarmer,cWLF)+cWF(educatedMiner,cWLF)+cWF(educatedGovt,cWLF)+cWF(educatedScientist,cWLF))}+3*{SN(cWF(militaryFarmer,cWLF)+cWF(militaryMiner,cWLF)+cWF(militarySoldiers,cWLF))}))
     Current educated government employees: {finalEducatedGovt}
@@ -785,7 +806,7 @@ Military:
         {militaryCopy.strip()}"""
     all_nations_output.append(final_output)
 
-if random.random() < 1/(1+math.sqrt(AInationCount/4)):
+if random.random() < -1/(1+math.sqrt(AInationCount/4)):
     all_nations_output.append(generateAINation(nameList))
 
 

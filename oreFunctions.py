@@ -92,8 +92,11 @@ def calculate(mode, resource, tin, ml):
 
 
 furnace_level_requirements = [
-    [10000, 1000, 500, 500, 0],
-    [35000, 5000, 3000, 2000, 1000]
+    [10000, 1000, 500, 500, 0, 0, 0, 0],
+    [35000, 5000, 3000, 2000, 1000, 0, 0, 0],
+    [100000, 25000, 10000, 10000, 5000, 0, 0, 0],
+    [750000, 750000, 500000, 250000, 25000, 0, 0, 0],
+    [2500000, 2000000, 2000000, 2000000, 50000, 100000, 100000, 25000],
 ]
 furnace_level_definitions = [
     "Iron",
@@ -104,20 +107,27 @@ furnace_level_definitions = [
 ]
 
 
-def handleFL(FL, curIron, curBronze, curCoal, curSalt, curSteel):
+
+def handleFL(FL, curIron, curBronze, curCoal, curSalt, curSteel, curCobalt, curTungsten, curOil):
     flr=furnace_level_requirements[FL]
     reqiron = flr[0]
     reqbronze = flr[1]
     reqcoal = flr[2]
     reqsalt = flr[3]
     reqsteel = flr[4]
+    reqcobalt = flr[5]
+    reqtungsten = flr[6]
+    reqoil = flr[7]
 
     if (
         curIron >= reqiron and 
         curBronze >= reqbronze and 
         curCoal >= reqcoal and 
         curSalt >= reqsalt and 
-        curSteel >= reqsteel
+        curSteel >= reqsteel and
+        curCobalt >= reqcobalt and
+        curTungsten >= reqtungsten and
+        curOil >= reqoil
     ):
         FL += 1
         curIron -= reqiron
@@ -125,7 +135,11 @@ def handleFL(FL, curIron, curBronze, curCoal, curSalt, curSteel):
         curCoal -= reqcoal
         curSalt -= reqsalt
         curSteel -= reqsteel
-    return [FL, curIron, curBronze, curCoal, curSalt, curSteel]
+        curCobalt -= reqcobalt
+        curTungsten -= reqtungsten
+        curOil -= reqoil
+
+    return [FL, curIron, curBronze, curCoal, curSalt, curSteel, curCobalt, curTungsten, curOil]
 
 
 def returnFLRequirements(FL):

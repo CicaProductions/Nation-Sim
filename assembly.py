@@ -61,12 +61,12 @@ FOCUS_DATASET = {
     "Gold^2": {
         "gold": 1000, "happiness": 75, "population": 500, "anger": 0,
         "pop_gain": 1, "pop_gain2": 0, "t2_cost": 100, "gpc": 1.0,
-        "hap_gain": -1, "ore_boost": 0.65, "farming_boost": 0.8, "influence_boost": 0.8, "research_boost": 1.0
+        "hap_gain": 0, "ore_boost": 0.65, "farming_boost": 0.8, "influence_boost": 0.8, "research_boost": 1.0
     },
     "Population^2": {
         "gold": 0, "happiness": 75, "population": 42000, "anger": 50,
         "pop_gain": 1500, "pop_gain2": 400, "t2_cost": 10, "gpc": 0.01,
-        "hap_gain": -1, "ore_boost": 0.5, "farming_boost": 0.7, "influence_boost": 0.75, "research_boost": 0.9
+        "hap_gain": 0, "ore_boost": 0.5, "farming_boost": 0.7, "influence_boost": 0.75, "research_boost": 0.9
     },
     "Stability^2": {
         "gold": 0, "happiness": 550, "population": 4500, "anger": 0,
@@ -161,11 +161,11 @@ Food:
         Drought Nerf: 0%
         Drought Duration: 0
 Ore:
- -Teir 1 ores-
+ -Tier 1 ores-
     Coal: 0, Iron: 0, Copper: 0, Tin: 0, Salt: 0, Sulphur: 0
- -Teir 2 ores-
+ -Tier 2 ores-
     Titanium: 0, Cobalt: 0, Tungsten: 0, Oil: 0, Magnesium: 0
- -Teir 3 ores-
+ -Tier 3 ores-
     Uranium: 0, Silicon: 0, Beryllium: 0, Hydrogen: 0, Plutonium: 0, Radium: 0, Mythril: 0
     Has: 
     Mining Level: 0
@@ -174,11 +174,13 @@ Ore:
         Focus: (+{focusOreBoost}%)
         Mining Level: (x1)
         Furnace Level: (x1)
-Research Boosts:
-    Research: (+0%)
-    Focus: (+{focusResearchBoost}%)
-    Furnace level: (x1)
-    Scientists: (x{scientistResearchBoost})
+Research Stats:
+    Research Points: 0.0
+    Research Boost:
+        Research: (+0%)
+        Focus: (+{focusResearchBoost}%)
+        Furnace level: (x1)
+        Scientists: (x{scientistResearchBoost})
 Government:
     Needed influence: 0 (0*(1*{SN(uneducatedFarmer)}+10*0+3*0))
     Current educated government employees: 0
@@ -205,4 +207,4 @@ Military:
 
 
 with open("output.txt", "w", encoding="utf-8") as file:
-    file.write(generate_nation_from_focus("Yugoslavia", "Government^2"))
+    file.write(generate_nation_from_focus("Aegloria", "Basic"))
